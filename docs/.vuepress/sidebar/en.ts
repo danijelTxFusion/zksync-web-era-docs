@@ -115,6 +115,34 @@ export const enSidebar = sidebar({
       ],
     },
     {
+      text: "JavaScript Ethers V6 SDK",
+      link: "/api/js/ethers-v6",
+      children: [
+        {
+          text: "Getting started",
+          link: "/api/js/ethers-v6/getting-started",
+          collapsible: true,
+          children: [
+            "/api/js/ethers-v6/examples/deposit",
+            "/api/js/ethers-v6/examples/transfer",
+            "/api/js/ethers-v6/examples/withdraw",
+            "/api/js/ethers-v6/examples/get-confirmed-tokens",
+            "/api/js/ethers-v6/examples/custom-paymaster/use-paymaster",
+          ],
+        },
+        "/api/js/ethers-v6/providers",
+        "/api/js/ethers-v6/accounts",
+        "/api/js/ethers-v6/accounts-l1-l2",
+        "/api/js/ethers-v6/contracts",
+        "/api/js/ethers-v6/features",
+        "/api/js/ethers-v6/utils",
+        "/api/js/ethers-v6/paymaster-utils",
+        "/api/js/ethers-v6/types",
+        "/api/js/ethers-v6/front-end",
+        "/api/js/ethers-v6/migration"
+      ],
+    },
+    {
       text: "Python SDK",
       link: "/api/python",
       children: ["/api/python/getting-started", "/api/python/providers", "/api/python/accounts", "/api/python/accounts-l1-l2", "/api/python/contracts", "/api/python/types"],
