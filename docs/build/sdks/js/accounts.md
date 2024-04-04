@@ -1525,10 +1525,10 @@ async getDomain(): Promise<ethers.TypedDataDomain>
 This class is to be used in a browser environment. The easiest way to construct it is to use the `getSigner` method of the `Web3Provider`. This structure extends `ethers.providers.JsonRpcSigner` and so supports all the methods available for it.
 
 ```typescript
-import { Web3Provider } from "zksync-ethers";
+import { Web3Provider, Provider, types } from "zksync-ethers";
 
-const provider = new Web3Provider(window.ethereum);
-const signer = provider.getSigner();
+const browserProvider = new Web3Provider(window.ethereum);
+const signer = Signer.from(browserProvider.getSigner(), Provider.getDefaultProvider(types.Network.Sepolia));
 ```
 
 ### `getBalance`
@@ -1548,19 +1548,85 @@ async getBalance(token?: Address, blockTag: BlockTag = 'committed'): Promise<Big
 
 #### Example
 
+Get ETH balance.
+
 ```ts
-import { Web3Provider } from "zksync-ethers";
-import { ethers } from "ethers";
+import { Web3Provider, Provider, types } from "zksync-ethers";
 
-const provider = new Web3Provider(window.ethereum);
-const signer = provider.getSigner();
+const browserProvider = new Web3Provider(window.ethereum);
+const signer = Signer.from(browserProvider.getSigner(), Provider.getDefaultProvider(types.Network.Sepolia));
 
-const tokenL2 = "0x6a4Fb925583F7D4dF82de62d98107468aE846FD1";
-// Getting token balance
-console.log(await signer.getBalance(tokenL2));
+console.log(`ETH balance: ${await signer.getBalance()}`);
+```
 
-// Getting ETH balance
-console.log(await signer.getBalance());
+Get token balance.
+
+```ts
+import { Web3Provider, Provider, types } from "zksync-ethers";
+
+const browserProvider = new Web3Provider(window.ethereum);
+const signer = Signer.from(browserProvider.getSigner(), Provider.getDefaultProvider(types.Network.Sepolia));
+
+const token = "0x6a4Fb925583F7D4dF82de62d98107468aE846FD1";
+
+console.log(`Token balance: ${await signer.getBalance(token)}`);
+```
+
+### `getAllBalances`
+
+Returns all token balances of the account.
+
+```ts
+async getAllBalances(): Promise<BalancesMap>
+```
+
+#### Example
+
+```ts
+import { Web3Provider, Provider, types } from "zksync-ethers";
+
+const browserProvider = new Web3Provider(window.ethereum);
+const signer = Signer.from(browserProvider.getSigner(), Provider.getDefaultProvider(types.Network.Sepolia));
+
+const allBalances = await signer.getAllBalances();
+```
+
+### `getDeploymentNonce`
+
+Returns the deployment nonce of the account.
+
+```ts
+async getDeploymentNonce(): Promise<BigNumber>
+```
+
+#### Example
+
+```ts
+import { Web3Provider, Provider, types } from "zksync-ethers";
+
+const browserProvider = new Web3Provider(window.ethereum);
+const signer = Signer.from(browserProvider.getSigner(), Provider.getDefaultProvider(types.Network.Sepolia));
+
+console.log(`Nonce: ${await signer.getDeploymentNonce()}`);
+```
+
+### `getL2BridgeContracts`
+
+Returns L2 bridge contracts.
+
+```ts
+async getDeploymentNonce(): Promise<BigNumber>
+```
+
+#### Example
+
+```ts
+import { Web3Provider, Provider, types } from "zksync-ethers";
+
+const browserProvider = new Web3Provider(window.ethereum);
+const signer = Signer.from(browserProvider.getSigner(), Provider.getDefaultProvider(types.Network.Sepolia));
+
+const l2BridgeContracts = await signer.getL2BridgeContracts();
 ```
 
 ### `getNonce`
@@ -1580,12 +1646,12 @@ async getNonce(blockTag?: BlockTag): Promise<number>
 #### Example
 
 ```ts
-import { Web3Provider } from "zksync-ethers";
+import { Web3Provider, Provider, types } from "zksync-ethers";
 
-const provider = new Web3Provider(window.ethereum);
-const signer = provider.getSigner();
+const browserProvider = new Web3Provider(window.ethereum);
+const signer = Signer.from(browserProvider.getSigner(), Provider.getDefaultProvider(types.Network.Sepolia));
 
-console.log(await signer.getNonce());
+const nonce = await signer.getNonce();
 ```
 
 ### `transfer`
@@ -1620,34 +1686,36 @@ async transfer(transaction: {
 Transfer ETH.
 
 ```ts
-import { Wallet, Web3Provider } from "zksync-ethers";
+import { Web3Provider, Provider, Wallet, types } from "zksync-ethers";
+import { ethers } from "ethers";
 
-const provider = new Web3Provider(window.ethereum);
-const signer = provider.getSigner();
+const browserProvider = new Web3Provider(window.ethereum);
+const signer = Signer.from(browserProvider.getSigner(), Provider.getDefaultProvider(types.Network.Sepolia));
 
-const recipient = Wallet.createRandom();
-
-const transferHandle = signer.transfer({
-  to: recipient.address,
+const tx = signer.transfer({
+  to: Wallet.createRandom().address,
   amount: ethers.utils.parseEther("0.01"),
 });
+
+const receipt = await tx.wait();
+
+console.log(`The sum of ${receipt.value} ETH was transferred to ${receipt.to}`);
 ```
 
 Transfer ETH using paymaster to facilitate fee payment with an ERC20 token.
 
 ```ts
-import { Wallet, Web3Provider } from "zksync-ethers";
+import { Web3Provider, Provider, Wallet, types } from "zksync-ethers";
+import { ethers } from "ethers";
 
 const token = "0x927488F48ffbc32112F1fF721759649A89721F8F"; // Crown token which can be minted for free
 const paymaster = "0x13D0D8550769f59aa241a41897D4859c87f7Dd46"; // Paymaster for Crown token
 
-const provider = new Web3Provider(window.ethereum);
-const signer = provider.getSigner();
+const browserProvider = new Web3Provider(window.ethereum);
+const signer = Signer.from(browserProvider.getSigner(), Provider.getDefaultProvider(types.Network.Sepolia));
 
-const recipient = Wallet.createRandom();
-
-const transferHandle = signer.transfer({
-  to: recipient.address,
+const tx = signer.transfer({
+  to: Wallet.createRandom().address,
   amount: ethers.utils.parseEther("0.01"),
   paymasterParams: utils.getPaymasterParams(paymaster, {
     type: "ApprovalBased",
@@ -1656,6 +1724,10 @@ const transferHandle = signer.transfer({
     innerInput: new Uint8Array(),
   }),
 });
+
+const receipt = await tx.wait();
+
+console.log(`The sum of ${receipt.value} ETH was transferred to ${receipt.to}`);
 ```
 
 ### `withdraw`
@@ -1690,13 +1762,13 @@ async withdraw(transaction: {
 Withdraw ETH.
 
 ```ts
-import { Web3Provider } from "zksync-ethers";
+import { Web3Provider, Provider, types } from "zksync-ethers";
 
-const provider = new Web3Provider(window.ethereum);
-const signer = provider.getSigner();
+const browserProvider = new Web3Provider(window.ethereum);
+const signer = Signer.from(browserProvider.getSigner(), Provider.getDefaultProvider(types.Network.Sepolia));
 
 const tokenL2 = "0x6a4Fb925583F7D4dF82de62d98107468aE846FD1";
-const tokenWithdrawHandle = await signer.withdraw({
+await signer.withdraw({
   token: tokenL2,
   amount: 10_000_000,
 });
@@ -1705,16 +1777,16 @@ const tokenWithdrawHandle = await signer.withdraw({
 Withdraw ETH using paymaster to facilitate fee payment with an ERC20 token.
 
 ```ts
-import { Web3Provider } from "zksync-ethers";
+import { Web3Provider, Provider, types } from "zksync-ethers";
 
 const token = "0x927488F48ffbc32112F1fF721759649A89721F8F"; // Crown token which can be minted for free
 const paymaster = "0x13D0D8550769f59aa241a41897D4859c87f7Dd46"; // Paymaster for Crown token
 
-const provider = new Web3Provider(window.ethereum);
-const signer = provider.getSigner();
+const browserProvider = new Web3Provider(window.ethereum);
+const signer = Signer.from(browserProvider.getSigner(), Provider.getDefaultProvider(types.Network.Sepolia));
 
 const tokenL2 = "0x6a4Fb925583F7D4dF82de62d98107468aE846FD1";
-const tokenWithdrawHandle = await signer.withdraw({
+await wallet.withdraw({
   token: tokenL2,
   amount: 10_000_000,
   paymasterParams: utils.getPaymasterParams(paymaster, {
@@ -1755,9 +1827,8 @@ async getMainContract(): Promise<Contract>
 import { Provider, L1Signer, types } from "zksync-ethers";
 import { ethers } from "ethers";
 
-const provider = new ethers.providers.Web3Provider(window.ethereum);
-const zksyncProvider = Provider.getDefaultProvider(types.Network.Sepolia);
-const signer = L1Signer.from(provider.getSigner(), zksyncProvider);
+const browserProvider = new ethers.providers.Web3Provider(window.ethereum);
+const signer = L1Signer.from(browserProvider.getSigner(), Provider.getDefaultProvider(types.Network.Sepolia));
 
 const mainContract = await signer.getMainContract();
 console.log(mainContract.address);
@@ -1783,9 +1854,8 @@ there is no separate Ether bridge contract, [Main contract](./accounts.md#getmai
 import { Provider, L1Signer, types } from "zksync-ethers";
 import { ethers } from "ethers";
 
-const provider = new ethers.providers.Web3Provider(window.ethereum);
-const zksyncProvider = Provider.getDefaultProvider(types.Network.Sepolia);
-const signer = L1Signer.from(provider.getSigner(), zksyncProvider);
+const browserProvider = new ethers.providers.Web3Provider(window.ethereum);
+const signer = L1Signer.from(browserProvider.getSigner(), Provider.getDefaultProvider(types.Network.Sepolia));
 
 const l1BridgeContracts = await signer.getL1BridgeContracts();
 ```
@@ -1807,21 +1877,29 @@ async getBalanceL1(token?: Address, blockTag?: BlockTag): Promise<BigNumber>
 
 #### Example
 
+Get ETH balance.
+
 ```ts
 import { Provider, L1Signer, types } from "zksync-ethers";
 import { ethers } from "ethers";
 
-const provider = new ethers.providers.Web3Provider(window.ethereum);
-const zksyncProvider = Provider.getDefaultProvider(types.Network.Sepolia);
-const signer = L1Signer.from(provider.getSigner(), zksyncProvider);
+const browserProvider = new ethers.providers.Web3Provider(window.ethereum);
+const signer = L1Signer.from(browserProvider.getSigner(), Provider.getDefaultProvider(types.Network.Sepolia));
+
+console.log(await signer.getBalanceL1());
+```
+
+Get token balance.
+
+```ts
+import { Provider, L1Signer, types } from "zksync-ethers";
+import { ethers } from "ethers";
+
+const browserProvider = new ethers.providers.Web3Provider(window.ethereum);
+const signer = L1Signer.from(browserProvider.getSigner(), Provider.getDefaultProvider(types.Network.Sepolia));
 
 const tokenL1 = "0x56E69Fa1BB0d1402c89E3A4E3417882DeA6B14Be";
-
-// Getting token balance
 console.log(await signer.getBalanceL1(tokenL1));
-
-// Getting ETH balance
-console.log(await signer.getBalanceL1());
 ```
 
 ### `l2TokenAddress`
@@ -1848,9 +1926,8 @@ async l2TokenAddress(token: Address): Promise<string>
 import { Provider, L1Signer, types } from "zksync-ethers";
 import { ethers } from "ethers";
 
-const provider = new ethers.providers.Web3Provider(window.ethereum);
-const zksyncProvider = Provider.getDefaultProvider(types.Network.Sepolia);
-const signer = L1Signer.from(provider.getSigner(), zksyncProvider);
+const browserProvider = new ethers.providers.Web3Provider(window.ethereum);
+const signer = L1Signer.from(browserProvider.getSigner(), Provider.getDefaultProvider(types.Network.Sepolia));
 
 const tokenL1 = "0x5C221E77624690fff6dd741493D735a17716c26B";
 
@@ -1883,9 +1960,8 @@ async getAllowanceL1(
 import { Provider, L1Signer, types } from "zksync-ethers";
 import { ethers } from "ethers";
 
-const provider = new ethers.providers.Web3Provider(window.ethereum);
-const zksyncProvider = Provider.getDefaultProvider(types.Network.Sepolia);
-const signer = L1Signer.from(provider.getSigner(), zksyncProvider);
+const browserProvider = new ethers.providers.Web3Provider(window.ethereum);
+const signer = L1Signer.from(browserProvider.getSigner(), Provider.getDefaultProvider(types.Network.Sepolia));
 
 const tokenL1 = "0x5C221E77624690fff6dd741493D735a17716c26B";
 console.log(`Token allowance: ${await signer.getAllowanceL1(tokenL1)}`);
@@ -1917,14 +1993,11 @@ async approveERC20(
 import { Provider, L1Signer, types } from "zksync-ethers";
 import { ethers } from "ethers";
 
-const provider = new ethers.providers.Web3Provider(window.ethereum);
-const zksyncProvider = Provider.getDefaultProvider(types.Network.Sepolia);
-const signer = L1Signer.from(provider.getSigner(), zksyncProvider);
+const browserProvider = new ethers.providers.Web3Provider(window.ethereum);
+const signer = L1Signer.from(browserProvider.getSigner(), Provider.getDefaultProvider(types.Network.Sepolia));
 
-const tokenL1 = "0x56E69Fa1BB0d1402c89E3A4E3417882DeA6B14Be";
-const txHandle = await signer.approveERC20(tokenL1, "10000000");
-
-await txHandle.wait();
+const tokenL1 = "0x5C221E77624690fff6dd741493D735a17716c26B";
+await signer.approveERC20(tokenL1, 5);
 ```
 
 ### `getBaseCost`
@@ -1953,9 +2026,8 @@ async getBaseCost(params: {
 import { Provider, L1Signer, types } from "zksync-ethers";
 import { ethers } from "ethers";
 
-const provider = new ethers.providers.Web3Provider(window.ethereum);
-const zksyncProvider = Provider.getDefaultProvider(types.Network.Sepolia);
-const signer = L1Signer.from(provider.getSigner(), zksyncProvider);
+const browserProvider = new ethers.providers.Web3Provider(window.ethereum);
+const signer = L1Signer.from(browserProvider.getSigner(), Provider.getDefaultProvider(types.Network.Sepolia));
 
 console.log(`Base cost: ${await signer.getBaseCost({ gasLimit: 100_000 })}`);
 ```
@@ -2004,33 +2076,36 @@ async deposit(transaction: {
 
 #### Example
 
+Deposit ETH.
+
 ```ts
 import { Provider, L1Signer, types } from "zksync-ethers";
 import { ethers } from "ethers";
 
-const provider = new ethers.providers.Web3Provider(window.ethereum);
-const zksyncProvider = Provider.getDefaultProvider(types.Network.Sepolia);
-const signer = L1Signer.from(provider.getSigner(), zksyncProvider);
+const browserProvider = new ethers.providers.Web3Provider(window.ethereum);
+const signer = L1Signer.from(browserProvider.getSigner(), Provider.getDefaultProvider(types.Network.Sepolia));
+
+await signer.deposit({
+  token: utils.ETH_ADDRESS,
+  amount: 10_000_000,
+});
+```
+
+Deposit token.
+
+```ts
+import { Provider, L1Signer, types } from "zksync-ethers";
+import { ethers } from "ethers";
+
+const browserProvider = new ethers.providers.Web3Provider(window.ethereum);
+const signer = L1Signer.from(browserProvider.getSigner(), Provider.getDefaultProvider(types.Network.Sepolia));
 
 const tokenL1 = "0x56E69Fa1BB0d1402c89E3A4E3417882DeA6B14Be";
-const tokenDepositHandle = await signer.deposit({
+await signer.deposit({
   token: tokenL1,
-  amount: "10000000",
+  amount: 10_000_000,
   approveERC20: true,
 });
-// Note that we wait not only for the L1 transaction to complete but also for it to be
-// processed by zkSync. If we want to wait only for the transaction to be processed on L1,
-// we can use `await tokenDepositHandle.waitL1Commit()`
-await tokenDepositHandle.wait();
-
-const ethDepositHandle = await signer.deposit({
-  token: utils.ETH_ADDRESS,
-  amount: "10000000",
-});
-// Note that we wait not only for the L1 transaction to complete but also for it to be
-// processed by zkSync. If we want to wait only for the transaction to be processed on L1,
-// we can use `await ethDepositHandle.waitL1Commit()`
-await ethDepositHandle.wait();
 ```
 
 ### `getDepositTx`
@@ -2073,14 +2148,13 @@ async getDepositTx(transaction: {
 import { Provider, L1Signer, types } from "zksync-ethers";
 import { ethers } from "ethers";
 
-const provider = new ethers.providers.Web3Provider(window.ethereum);
-const zksyncProvider = Provider.getDefaultProvider(types.Network.Sepolia);
-const signer = L1Signer.from(provider.getSigner(), zksyncProvider);
+const browserProvider = new ethers.providers.Web3Provider(window.ethereum);
+const signer = L1Signer.from(browserProvider.getSigner(), Provider.getDefaultProvider(types.Network.Sepolia));
 
 const tokenL1 = "0x56E69Fa1BB0d1402c89E3A4E3417882DeA6B14Be";
 const tx = await signer.getDepositTx({
   token: tokenL1,
-  amount: "10000000",
+  amount: 10_000_000,
 });
 ```
 
@@ -2124,14 +2198,13 @@ async estimateGasDeposit(transaction:
 import { Provider, L1Signer, types } from "zksync-ethers";
 import { ethers } from "ethers";
 
-const provider = new ethers.providers.Web3Provider(window.ethereum);
-const zksyncProvider = Provider.getDefaultProvider(types.Network.Sepolia);
-const signer = L1Signer.from(provider.getSigner(), zksyncProvider);
+const browserProvider = new ethers.providers.Web3Provider(window.ethereum);
+const signer = L1Signer.from(browserProvider.getSigner(), Provider.getDefaultProvider(types.Network.Sepolia));
 
 const tokenL1 = "0x5C221E77624690fff6dd741493D735a17716c26B";
 const gas = await signer.estimateGasDeposit({
   token: tokenL1,
-  amount: "10000000",
+  amount: 10_000_000,
 });
 console.log(`Gas: ${gas}`);
 ```
@@ -2165,17 +2238,16 @@ async getFullRequiredDepositFee(transaction: {
 #### Example
 
 ```ts
-import { Provider, L1Signer, types } from "zksync-ethers";
+import { Provider, L1Signer, Wallet, types } from "zksync-ethers";
 import { ethers } from "ethers";
 
-const provider = new ethers.providers.Web3Provider(window.ethereum);
-const zksyncProvider = Provider.getDefaultProvider(types.Network.Sepolia);
-const signer = L1Signer.from(provider.getSigner(), zksyncProvider);
+const browserProvider = new ethers.providers.Web3Provider(window.ethereum);
+const signer = L1Signer.from(browserProvider.getSigner(), Provider.getDefaultProvider(types.Network.Sepolia));
 
 const tokenL1 = "0x56E69Fa1BB0d1402c89E3A4E3417882DeA6B14Be";
 const fee = await signer.getFullRequiredDepositFee({
   token: tokenL1,
-  to: await wallet.getAddress(),
+  to: Wallet.createRandom().address,
 });
 console.log(`Fee: ${fee}`);
 ```
@@ -2202,9 +2274,8 @@ async claimFailedDeposit(depositHash: BytesLike): Promise<ethers.ContractTransac
 import { Provider, L1Signer, types } from "zksync-ethers";
 import { ethers } from "ethers";
 
-const provider = new ethers.providers.Web3Provider(window.ethereum);
-const zksyncProvider = Provider.getDefaultProvider(types.Network.Sepolia);
-const signer = L1Signer.from(provider.getSigner(), zksyncProvider);
+const browserProvider = new ethers.providers.Web3Provider(window.ethereum);
+const signer = L1Signer.from(browserProvider.getSigner(), Provider.getDefaultProvider(types.Network.Sepolia));
 
 const FAILED_DEPOSIT_HASH = "<FAILED_DEPOSIT_TX_HASH>";
 const claimFailedDepositHandle = await signer.claimFailedDeposit(FAILED_DEPOSIT_HASH);
@@ -2231,9 +2302,8 @@ async finalizeWithdrawal(withdrawalHash: BytesLike, index: number = 0): Promise<
 import { Provider, L1Signer, types } from "zksync-ethers";
 import { ethers } from "ethers";
 
-const provider = new ethers.providers.Web3Provider(window.ethereum);
-const zksyncProvider = Provider.getDefaultProvider(types.Network.Sepolia);
-const signer = L1Signer.from(provider.getSigner(), zksyncProvider);
+const browserProvider = new ethers.providers.Web3Provider(window.ethereum);
+const signer = L1Signer.from(browserProvider.getSigner(), Provider.getDefaultProvider(types.Network.Sepolia));
 
 const WITHDRAWAL_HASH = "<WITHDRAWAL_TX_HASH>";
 const finalizeWithdrawHandle = await signer.finalizeWithdrawal(WITHDRAWAL_HASH);
@@ -2260,9 +2330,8 @@ async isWithdrawalFinalized(withdrawalHash: BytesLike, index: number = 0): Promi
 import { Provider, L1Signer, types } from "zksync-ethers";
 import { ethers } from "ethers";
 
-const provider = new ethers.providers.Web3Provider(window.ethereum);
-const zksyncProvider = Provider.getDefaultProvider(types.Network.Sepolia);
-const signer = L1Signer.from(provider.getSigner(), zksyncProvider);
+const browserProvider = new ethers.providers.Web3Provider(window.ethereum);
+const signer = L1Signer.from(browserProvider.getSigner(), Provider.getDefaultProvider(types.Network.Sepolia));
 
 const WITHDRAWAL_HASH = "<WITHDRAWAL_TX_HASH>";
 const isFinalized = await signer.isWithdrawalFinalized(WITHDRAWAL_HASH);
@@ -2289,9 +2358,8 @@ async finalizeWithdrawalParams(withdrawalHash: BytesLike, index: number = 0): Pr
 import { Provider, L1Signer, types } from "zksync-ethers";
 import { ethers } from "ethers";
 
-const provider = new ethers.providers.Web3Provider(window.ethereum);
-const zksyncProvider = Provider.getDefaultProvider(types.Network.Sepolia);
-const signer = L1Signer.from(provider.getSigner(), zksyncProvider);
+const browserProvider = new ethers.providers.Web3Provider(window.ethereum);
+const signer = L1Signer.from(browserProvider.getSigner(), Provider.getDefaultProvider(types.Network.Sepolia));
 
 const WITHDRAWAL_HASH = "<WITHDRAWAL_TX_HASH>";
 const params = await signer.finalizeWithdrawalParams(WITHDRAWAL_HASH);
@@ -2335,49 +2403,14 @@ async requestExecute(transaction: {
 import { Provider, L1Signer, types } from "zksync-ethers";
 import { ethers } from "ethers";
 
-const CONTRACT_ADDRESS = "<CONTRACT_ADDRESS>";
+const browserProvider = new ethers.providers.Web3Provider(window.ethereum);
+const signer = L1Signer.from(browserProvider.getSigner(), Provider.getDefaultProvider(types.Network.Sepolia));
 
-const provider = new ethers.providers.Web3Provider(window.ethereum);
-const zksyncProvider = Provider.getDefaultProvider(types.Network.Sepolia);
-const signer = L1Signer.from(provider.getSigner(), zksyncProvider);
-
-const gasPrice = await signer.providerL1.getGasPrice();
-
-// The calldata can be encoded the same way as for Ethereum.
-// Here is an example of how to get the calldata from an ABI:
-const abi = [
-  {
-    inputs: [],
-    name: "increment",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-];
-const contractInterface = new ethers.utils.Interface(abi);
-const calldata = contractInterface.encodeFunctionData("increment", []);
-const l2GasLimit = BigNumber.from(1000);
-
-const txCostPrice = await signer.getBaseCost({
-  gasPrice,
-  calldataLength: ethers.utils.arrayify(calldata).length,
-  l2GasLimit,
+await signer.requestExecute({
+  contractAddress: await signer.providerL2.getMainContractAddress(),
+  calldata: "0x",
+  l2Value: 7_000_000_000,
 });
-
-console.log(`Executing the transaction will cost ${ethers.utils.formatEther(txCostPrice)} ETH`);
-
-const executeTx = await signer.requestExecute({
-  contractAddress: CONTRACT_ADDRESS,
-  calldata,
-  l2Value: 1,
-  l2GasLimit,
-  overrides: {
-    gasPrice,
-    value: txCostPrice,
-  },
-});
-
-await executeTx.wait();
 ```
 
 ### `getRequestExecuteTx`
@@ -2418,46 +2451,13 @@ async getRequestExecuteTx(transaction: {
 import { Provider, L1Signer, types } from "zksync-ethers";
 import { ethers } from "ethers";
 
-const CONTRACT_ADDRESS = "<CONTRACT_ADDRESS>";
+const browserProvider = new ethers.providers.Web3Provider(window.ethereum);
+const signer = L1Signer.from(browserProvider.getSigner(), Provider.getDefaultProvider(types.Network.Sepolia));
 
-const provider = new ethers.providers.Web3Provider(window.ethereum);
-const zksyncProvider = Provider.getDefaultProvider(types.Network.Sepolia);
-const signer = L1Signer.from(provider.getSigner(), zksyncProvider);
-
-const gasPrice = await signer.providerL1.getGasPrice();
-
-// The calldata can be encoded the same way as for Ethereum.
-// Here is an example of how to get the calldata from an ABI:
-const abi = [
-  {
-    inputs: [],
-    name: "increment",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-];
-const contractInterface = new ethers.utils.Interface(abi);
-const calldata = contractInterface.encodeFunctionData("increment", []);
-const l2GasLimit = BigNumber.from(1000);
-
-const txCostPrice = await signer.getBaseCost({
-  gasPrice,
-  calldataLength: ethers.utils.arrayify(calldata).length,
-  l2GasLimit,
-});
-
-console.log(`Executing the transaction will cost ${ethers.utils.formatEther(txCostPrice)} ETH`);
-
-const executeTx = await signer.getRequestExecuteTx({
-  contractAddress: CONTRACT_ADDRESS,
-  calldata,
-  l2Value: 1,
-  l2GasLimit,
-  overrides: {
-    gasPrice,
-    value: txCostPrice,
-  },
+const tx = await signer.getRequestExecuteTx({
+  contractAddress: await signer.providerL2.getMainContractAddress(),
+  calldata: "0x",
+  l2Value: 7_000_000_000,
 });
 ```
 
@@ -2499,47 +2499,16 @@ async estimateGasRequestExecute(transaction: {
 import { Provider, L1Signer, types } from "zksync-ethers";
 import { ethers } from "ethers";
 
-const CONTRACT_ADDRESS = "<CONTRACT_ADDRESS>";
+const browserProvider = new ethers.providers.Web3Provider(window.ethereum);
+const signer = L1Signer.from(browserProvider.getSigner(), Provider.getDefaultProvider(types.Network.Sepolia));
 
-const provider = new ethers.providers.Web3Provider(window.ethereum);
-const zksyncProvider = Provider.getDefaultProvider(types.Network.Sepolia);
-const signer = L1Signer.from(provider.getSigner(), zksyncProvider);
-
-const gasPrice = await wallet.providerL1.getGasPrice();
-
-// The calldata can be encoded the same way as for Ethereum.
-// Here is an example of how to get the calldata from an ABI:
-const abi = [
-  {
-    inputs: [],
-    name: "increment",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-];
-const contractInterface = new ethers.utils.Interface(abi);
-const calldata = contractInterface.encodeFunctionData("increment", []);
-const l2GasLimit = BigNumber.from(1000);
-
-const txCostPrice = await signer.getBaseCost({
-  gasPrice,
-  calldataLength: ethers.utils.arrayify(calldata).length,
-  l2GasLimit,
+const gas = await signer.estimateGasRequestExecute({
+  contractAddress: await signer.providerL2.getMainContractAddress(),
+  calldata: "0x",
+  l2Value: 7_000_000_000,
 });
 
-console.log(`Executing the transaction will cost ${ethers.utils.formatEther(txCostPrice)} ETH`);
-
-const executeTx = await signer.getRequestExecuteTx({
-  contractAddress: CONTRACT_ADDRESS,
-  calldata,
-  l2Value: 1,
-  l2GasLimit,
-  overrides: {
-    gasPrice,
-    value: txCostPrice,
-  },
-});
+console.log(`Gas: ${gas}`);
 ```
 
 ## `SmartAccount`
